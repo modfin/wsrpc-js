@@ -65,7 +65,6 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 				case WebSocket.CLOSING:
 				case WebSocket.CLOSED:
 				default:
-					ws.close(101);
 			}
 		};
 
@@ -270,7 +269,7 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 	// and switch to long polling
 	function checkConnectivity() {
 		if (errCount >= 10) {
-			ws.close(101);
+			ws.close(4000);
 		}
 
 		errCount = 0;
