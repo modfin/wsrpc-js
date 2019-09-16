@@ -24,6 +24,7 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 
 	function connect() {
 		if (disableWebsocket) {
+			resolveConnection(wsrpc);
 			return
 		}
 
@@ -31,10 +32,11 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 		taskCounter = 0;
 
 		ws.onopen = function () {
+			resolveConnection(wsrpc);
+
 			connected = true;
 			reConnectTimeout = 100;
 
-			reQueue();
 			checkConnectivity();
 		};
 		ws.onclose = function () {
@@ -53,7 +55,7 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 			1: "open",
 			0: "connecting"
 		};
-		ws.onerror = function () {
+		ws.onerror = function (err) {
 			errCount++;
 
 			switch (ws.readyState) {
@@ -61,6 +63,7 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 					console.log("confucious says WTF?");
 					break;
 				case WebSocket.CONNECTING:
+					rejectConnection(err);
 					break;
 				case WebSocket.CLOSING:
 				case WebSocket.CLOSED:
@@ -114,11 +117,6 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 			if (!!ws && connected) {
 				ws.send(data);
 				continue;
-			}
-
-			function onError(err) {
-				console.log("internal err: ", err);
-				return undefined;
 			}
 
 			fetch(httpUrl, {
@@ -301,7 +299,15 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 	if (!disableWebsocket) {
 		reConnect();
 	}
-	return {
+
+	var attemptedConnection = new Promise(function(resolve, reject) {
+		resolveConnection = resolve;
+		rejectConnection = reject;
+	});
+	var resolveConnection;
+	var rejectConnection;
+
+	var wsrpc = {
 		// args is assumed to be an object containing
 		// 1. Either/Both []{method, params} or method, params. Where params is optional for all methods and calls
 		// 2. a callback for successful calls
@@ -384,5 +390,7 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 
 			queuePayload(payloads);
 		},
-	}
+	};
+
+	return attemptedConnection;
 }
