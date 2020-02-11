@@ -1,15 +1,10 @@
-// TODO polyfill Promise API
-
-function WSRPC(url, defaultHeaders, disableWebsocket) {
+function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 	var ws;
 	var connected = false;
 	var errCount = 0;
 
-	if (url[0] === '/') {
-		url = window.location.host + url
-	}
-	var wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + url;
-	var httpUrl = window.location.protocol + '//' + url;
+	var wsUrl = (protocol === 'https:' ? 'wss://' : 'ws://') + url;
+	var httpUrl = protocol + '//' + url;
 
 	var clearingQueue = false;
 	var queue = [];
@@ -38,6 +33,7 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 			reConnectTimeout = 100;
 
 			checkConnectivity();
+			reQueue();
 		};
 		ws.onclose = function () {
 			if (!!connected) {
@@ -48,13 +44,6 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 			reConnect();
 		};
 
-		// used for debugging
-		var states = {
-			3: "closed",
-			2: "closing",
-			1: "open",
-			0: "connecting"
-		};
 		ws.onerror = function (err) {
 			errCount++;
 
@@ -308,6 +297,10 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 	var rejectConnection;
 
 	var wsrpc = {
+		open: function() {
+			return ws.readyState === WebSocket.OPEN
+		},
+		manualReconnect: reConnect,
 		// args is assumed to be an object containing
 		// 1. Either/Both []{method, params} or method, params. Where params is optional for all methods and calls
 		// 2. a callback for successful calls
@@ -394,3 +387,5 @@ function WSRPC(url, defaultHeaders, disableWebsocket) {
 
 	return attemptedConnection;
 }
+
+module.exports = WSRPC;
