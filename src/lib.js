@@ -387,3 +387,8 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 
 	return attemptedConnection;
 }
+
+if (typeof module === "undefined") {
+	module = {}
+}
+module.exports = WSRPC;
