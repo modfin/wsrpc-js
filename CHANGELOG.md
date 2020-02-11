@@ -1,3 +1,9 @@
+#1.0.1
+## Bugfixes
+- Removed a stray line which caused 1.0.0 to fail where commonJS is unavailable. 1.0.0 has been unpublished
+## Changes
+- None
+
 # 1.0.0
 ## Bugfixes
 - None
