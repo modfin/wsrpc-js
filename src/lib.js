@@ -9,13 +9,18 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 	var clearingQueue = false;
 	var queue = [];
 
-	var taskCounter = 0;
 	var resolvers = {};
-	var batchCounter = 0;
 	var batches = {};
 
 	var reConnectTimeout = 100;
 	var reConnectTimeoutLimit = 1200000;
+
+	function uuidv4() {
+		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+			var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+			return v.toString(16);
+		});
+	}
 
 	function connect() {
 		if (disableWebsocket) {
@@ -24,7 +29,6 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 		}
 
 		ws = new WebSocket(wsUrl);
-		taskCounter = 0;
 
 		ws.onopen = function () {
 			resolveConnection(wsrpc);
@@ -135,7 +139,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 	}
 
 	function parseMessage(resp) {
-		var resolver = resolvers[resp.id];
+		var resolver = resolvers[resp.jobId];
 		if (!resolver) {
 			return
 		}
@@ -155,7 +159,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 				var batchIds = batches[resolver.batchId];
 				batches[resolver.batchId] = [];
 				batchIds.forEach(function(id) {
-					if (id !== resp.id) {
+					if (id !== resp.jobId) {
 						var r = resolvers[id];
 						if (!r || !r.payload) {
 							return
@@ -169,7 +173,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 
 					if (!!resp.error) {
 						if (resp.error.code === 205) {
-							delete resolvers[resp.id];
+							delete resolvers[resp.jobId];
 
 							if (!!resolver.finalCallback) {
 								resolver.finalCallback(resp)
@@ -208,7 +212,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 	}
 
 	function resolveCall(resolver, resp) {
-		delete resolvers[resp.id];
+		delete resolvers[resp.jobId];
 
 		if (!!resp.error) {
 			if (!!resolver.catchCallback) {
@@ -230,7 +234,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 		if (!!resp.error) {
 			if (resp.error.code === 205) {
 
-				delete resolvers[resp.id];
+				delete resolvers[resp.jobId];
 
 				if (!!resolver.finalCallback) {
 					resolver.finalCallback(resp, function(){})
@@ -277,7 +281,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 	function newPayload(type, method, params, header) {
 		return {
 			jsonrpc: "2.0",
-			id: ++taskCounter,
+			jobId: uuidv4(),
 			type: type,
 			method: method,
 			params: params,
@@ -306,7 +310,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 		// 2. a callback for successful calls
 		// 3. a callback for error handling
 		call: function (args) {
-			var batchId = batchCounter++;
+			var batchId = uuidv4();
 
 			if (!!args.method) {
 				args.calls = args.calls || [];
@@ -326,9 +330,9 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 					payloads.push(payload);
 
 					batches[batchId] = batches[batchId] ? batches[batchId] : [];
-					batches[batchId].push(payload.id);
+					batches[batchId].push(payload.jobId);
 
-					resolvers[payload.id] = {
+					resolvers[payload.jobId] = {
 						batchId: batchId,
 						type: 'call',
 						args: args,
@@ -348,7 +352,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 			return promises.length > 1 ? promises : promises[0];
 		},
 		streamrx: function (args) {
-			var batchId = batchCounter++;
+			var batchId = uuidv4();
 
 			if (!!args.calls && args.calls.length > 1) {
 
@@ -369,9 +373,9 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 				var payload = newPayload('STREAM', call.method, call.params, call.header);
 				payloads.push(payload);
 				batches[batchId] = batches[batchId] ? batches[batchId] : [];
-				batches[batchId].push(payload.id);
+				batches[batchId].push(payload.jobId);
 
-				resolvers[payload.id] = {
+				resolvers[payload.jobId] = {
 					batchId: batchId,
 					type: 'stream',
 					payload: payload,
