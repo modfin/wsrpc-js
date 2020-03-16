@@ -1,6 +1,6 @@
 {
   "name": "wsrpc-js",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Client library for ModFins WSRPC server library",
   "main": "src/lib.js",
   "scripts": {

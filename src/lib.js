@@ -115,7 +115,9 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 			fetch(httpUrl, {
 				method: 'POST',
 				body: data,
-				headers: defaultHeaders ? defaultHeaders : undefined,
+				headers: data.header
+					? data.header
+					: defaultHeaders,
 			}).then(
 				function (res) {
 					res.json().then(onmessage, onmessage)
@@ -268,7 +270,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 	}
 
 	function reConnect() {
-		if (!!connected || disableWebsocket) {
+		if (!!connected) {
 			return;
 		}
 
@@ -289,10 +291,6 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 		}
 	}
 
-	if (!disableWebsocket) {
-		reConnect();
-	}
-
 	var attemptedConnection = new Promise(function(resolve, reject) {
 		resolveConnection = resolve;
 		rejectConnection = reject;
@@ -302,7 +300,7 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 
 	var wsrpc = {
 		open: function() {
-			return ws.readyState === WebSocket.OPEN
+			return ws.readyState === WebSocket.OPEN || disableWebsocket
 		},
 		manualReconnect: reConnect,
 		// args is assumed to be an object containing
@@ -388,6 +386,8 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 			queuePayload(payloads);
 		},
 	};
+
+	reConnect();
 
 	return attemptedConnection;
 }
