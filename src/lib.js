@@ -123,7 +123,9 @@ function WSRPC(protocol, url, defaultHeaders, disableWebsocket) {
 					res.json().then(onmessage, onmessage)
 				},
 				function (err) {
-					err.json().then(onmessage, onmessage)
+					typeof err.json === 'function'
+						? err.json().then(onmessage, onmessage)
+						: onmessage({ error: err, message: 'there was an error, but it could not be parsed as json' })
 				}
 			)
 		}
