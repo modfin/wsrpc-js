@@ -1,3 +1,9 @@
+#1.1.2
+## Bug fixes
+- Fix a bug where error returned by ws was assumed to always be on json format
+## Changes
+- None
+
 #1.1.1
 ## Bug fixes
 - Client can now initialize with websocket disabled.
