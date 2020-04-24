@@ -1,4 +1,4 @@
-# 1.1.2 RC
+# 1.1.2
 ## Bug fixes
 - Fix a bug where error returned by ws was assumed to always be on json format
 ## Changes
